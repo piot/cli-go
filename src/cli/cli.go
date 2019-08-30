@@ -28,6 +28,7 @@ package cli
 
 import (
 	"os"
+	"path/filepath"
 	"reflect"
 
 	"github.com/alecthomas/kong"
@@ -75,7 +76,7 @@ type RunOptions struct {
 }
 
 func Run(cliStructReference interface{}, options RunOptions) {
-	name := os.Args[0]
+	name := filepath.Base(os.Args[0])
 	color.New(color.FgCyan).Fprintf(os.Stderr, "%v %v\n", name, options.Version)
 
 	log := clog.DefaultLog()
