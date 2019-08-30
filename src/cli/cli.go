@@ -28,14 +28,36 @@ package cli
 
 import (
 	"os"
+	"reflect"
 
 	"github.com/alecthomas/kong"
 	"github.com/fatih/color"
 	"github.com/piot/log-go/src/clog"
+	"github.com/piot/log-go/src/clogint"
 )
 
+type LogLevelString struct {
+	Level string
+}
+
+type Options struct {
+	LogLevel LogLevelString `short:"l" help: the log level`
+}
+
+func (o LogLevelString) Decode(ctx *kong.DecodeContext, target reflect.Value) error {
+	stringField := target.FieldByName("Level")
+	logLevelToken := ctx.Scan.Pop()
+	stringField.SetString(logLevelToken.String())
+	return nil
+}
+
+func (o LogLevelString) AfterApply(log *clog.Log) error {
+	log.SetLogLevelUsingString(o.Level, clogint.Info)
+	return nil
+}
+
 func runWithLog(cliStructReference interface{}, log *clog.Log) error {
-	ctx := kong.Parse(cliStructReference)
+	ctx := kong.Parse(cliStructReference, kong.Bind(log), kong.TypeMapper(reflect.TypeOf(LogLevelString{}), &LogLevelString{}))
 	err := ctx.Run(log)
 	return err
 }
@@ -57,6 +79,7 @@ func Run(cliStructReference interface{}, options RunOptions) {
 	color.New(color.FgCyan).Fprintf(os.Stderr, "%v %v\n", name, options.Version)
 
 	log := clog.DefaultLog()
+	log.SetLogLevel(clogint.Info)
 	err := runWithLog(cliStructReference, log)
 	if err != nil {
 		log.Err(err)
