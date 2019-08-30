@@ -57,9 +57,10 @@ func (o LogLevelString) AfterApply(log *clog.Log) error {
 	return nil
 }
 
-func runWithLog(cliStructReference interface{}, log *clog.Log) error {
+func runWithLog(cliStructReference interface{}, log *clog.Log, customArgs []interface{}) error {
 	ctx := kong.Parse(cliStructReference, kong.Bind(log), kong.TypeMapper(reflect.TypeOf(LogLevelString{}), &LogLevelString{}))
-	err := ctx.Run(log)
+	logPlusRest := []interface{}{customArgs, log}
+	err := ctx.Run(logPlusRest)
 	return err
 }
 
@@ -75,16 +76,24 @@ type RunOptions struct {
 	ApplicationType ApplicationType
 }
 
-func Run(cliStructReference interface{}, options RunOptions) {
+func internalRun(cliStructReference interface{}, options RunOptions, customArgs []interface{}) {
 	name := filepath.Base(os.Args[0])
 	color.New(color.FgCyan).Fprintf(os.Stderr, "%v %v\n", name, options.Version)
 
 	log := clog.DefaultLog()
 	log.SetLogLevel(clogint.Info)
-	err := runWithLog(cliStructReference, log)
+	err := runWithLog(cliStructReference, log, customArgs)
 	if err != nil {
 		log.Err(err)
 		os.Exit(-1)
 	}
 	os.Exit(0)
+}
+
+func RunWithArguments(cliStructReference interface{}, options RunOptions, customArgs ...interface{}) {
+	internalRun(cliStructReference, options, customArgs)
+}
+
+func Run(cliStructReference interface{}, options RunOptions, customArgs []interface{}) {
+	internalRun(cliStructReference, options, nil)
 }
