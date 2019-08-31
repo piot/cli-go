@@ -42,7 +42,7 @@ type LogLevelString struct {
 }
 
 type Options struct {
-	LogLevel LogLevelString `short:"l" help: the log level`
+	LogLevel LogLevelString `help:"the log level"`
 }
 
 func (o LogLevelString) Decode(ctx *kong.DecodeContext, target reflect.Value) error {
