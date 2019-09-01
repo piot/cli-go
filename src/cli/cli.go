@@ -94,6 +94,6 @@ func RunWithArguments(cliStructReference interface{}, options RunOptions, custom
 	internalRun(cliStructReference, options, customArgs)
 }
 
-func Run(cliStructReference interface{}, options RunOptions, customArgs []interface{}) {
+func Run(cliStructReference interface{}, options RunOptions) {
 	internalRun(cliStructReference, options, nil)
 }
