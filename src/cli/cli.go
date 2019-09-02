@@ -37,6 +37,11 @@ import (
 	"github.com/piot/log-go/src/clogint"
 )
 
+type LogConfigFile struct {
+	ApplicationName string
+	LogDirectory    string
+}
+
 type LogLevelString struct {
 	Level string
 }
@@ -74,13 +79,44 @@ const (
 type RunOptions struct {
 	Version         string
 	ApplicationType ApplicationType
+	LogConfig       interface{}
+}
+
+func createFileAndConsoleLog(info *LogConfigFile) (*clog.Log, error) {
+	loggers := make([]clog.Logger, 2)
+	fileLog, fileLogErr := clog.NewFileLogger(info.LogDirectory, info.ApplicationName)
+	if fileLogErr != nil {
+		return nil, fileLogErr
+	}
+	loggers[0] = fileLog
+	consoleLogger := clog.NewConsoleLogger()
+	loggers[1] = consoleLogger
+
+	multiLog, multiLogErr := clog.NewMultiLog(loggers...)
+	if multiLogErr != nil {
+		return nil, multiLogErr
+	}
+	return multiLog, nil
 }
 
 func internalRun(cliStructReference interface{}, options RunOptions, customArgs []interface{}) {
 	name := filepath.Base(os.Args[0])
 	color.New(color.FgCyan).Fprintf(os.Stderr, "%v %v\n", name, options.Version)
 
-	log := clog.DefaultLog()
+	var log *clog.Log
+	if options.LogConfig != nil {
+		fileLog, _ := options.LogConfig.(*LogConfigFile)
+		if fileLog != nil {
+			color.New(color.FgCyan).Fprintf(os.Stderr, "Multilog! %v %v\n", fileLog.ApplicationName, fileLog.LogDirectory)
+			var multiLogErr error
+			log, multiLogErr = createFileAndConsoleLog(fileLog)
+			if multiLogErr != nil {
+				panic(multiLogErr)
+			}
+		}
+	} else {
+		log = clog.DefaultLog()
+	}
 	log.SetLogLevel(clogint.Info)
 	err := runWithLog(cliStructReference, log, customArgs)
 	if err != nil {
