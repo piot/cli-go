@@ -29,7 +29,6 @@ package cli
 import (
 	"os"
 	"path/filepath"
-	"reflect"
 
 	"github.com/alecthomas/kong"
 	"github.com/fatih/color"
@@ -42,49 +41,31 @@ type LogConfigFile struct {
 	LogDirectory    string
 }
 
-type LogLevelString struct {
-	Level string
-}
+type LogLevelString string
 
-type LogFileString struct {
-	File string
-}
+type LogFileString string
 
 type Options struct {
 	LogLevel LogLevelString `help:"the log level"`
 	LogFile  LogFileString  `help:"log output file" default:""`
 }
 
-func (o LogLevelString) Decode(ctx *kong.DecodeContext, target reflect.Value) error {
-	stringField := target.FieldByName("Level")
-	logLevelToken := ctx.Scan.Pop()
-	stringField.SetString(logLevelToken.String())
-	return nil
-}
-
-func (o LogFileString) Decode(ctx *kong.DecodeContext, target reflect.Value) error {
-	stringField := target.FieldByName("File")
-	logLevelToken := ctx.Scan.Pop()
-	stringField.SetString(logLevelToken.String())
-	return nil
-}
-
-func (o LogFileString) BeforeApply(log *clog.Log) error {
-	fileName := o.File
+func (o LogFileString) AfterApply(log *clog.Log) error {
+	fileName := string(o)
 	dir, file := filepath.Split(fileName)
 	info := &LogConfigFile{ApplicationName: file, LogDirectory: dir}
 	logFile, _ := createFileAndConsoleLog(info)
-	log = logFile
+	*log = *logFile
 	return nil
 }
 
 func (o LogLevelString) AfterApply(log *clog.Log) error {
-	log.SetLogLevelUsingString(o.Level, clogint.Info)
+	log.SetLogLevelUsingString(string(o), clogint.Info)
 	return nil
 }
 
 func runWithLog(cliStructReference interface{}, log *clog.Log, customArgs []interface{}) error {
-	ctx := kong.Parse(cliStructReference, kong.Bind(log), kong.TypeMapper(reflect.TypeOf(LogLevelString{}), &LogLevelString{}), kong.TypeMapper(reflect.TypeOf(LogFileString{}), &LogFileString{}))
+	ctx := kong.Parse(cliStructReference, kong.Bind(log))
 	logPlusRest := []interface{}{customArgs, log}
 	err := ctx.Run(logPlusRest)
 	return err
