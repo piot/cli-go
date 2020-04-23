@@ -70,10 +70,10 @@ func (o LogFileString) Decode(ctx *kong.DecodeContext, target reflect.Value) err
 }
 
 func (o LogFileString) BeforeApply(log *clog.Log) error {
-	fileName := o.File;
-	dir,file := filepath.Split(fileName)
-	info := &LogConfigFile{ ApplicationName: file, LogDirectory: dir}
-	logFile,_ := createFileAndConsoleLog(info)
+	fileName := o.File
+	dir, file := filepath.Split(fileName)
+	info := &LogConfigFile{ApplicationName: file, LogDirectory: dir}
+	logFile, _ := createFileAndConsoleLog(info)
 	log = logFile
 	return nil
 }
